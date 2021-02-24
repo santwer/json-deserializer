@@ -1,0 +1,24 @@
+{
+    "name": "antwersv/json-deserializer",
+    "description": "Laravel package for deserialize Json to stdClass",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sven",
+            "email": "kennx@hotmail.de"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "antwersv\\jsonDeserializer\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "antwersv\\jsonDeserializer\\JsonDeserializeServiceProvider"
+            ]
+        }
+    }
+}
