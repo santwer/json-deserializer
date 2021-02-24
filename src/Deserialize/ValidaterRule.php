@@ -60,7 +60,7 @@ class ValidaterRule
                 return 'date';
         }
         if($this->type instanceof Deserialize) {
-            //i dont know
+            //not implemented yet
         }
     }
 

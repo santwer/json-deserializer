@@ -1,0 +1,31 @@
+<?php
+
+namespace {{ namespace }};
+
+use antwersv\jsonDeserializer\Deserialize\Deserialize;
+
+class {{ class }} extends Deserialize
+{
+   //define all rules as public attributes
+   //public string $example;
+
+   //define with more Laravel Validation-Rules
+   //public string $email = 'email';
+
+    /**
+    * usage example:
+    *
+    * $response = Http::get('http://127.0.0.1/someFile.json');
+    * $equil = JsonDeserializer::deserialize(
+    * $response->json(),
+    * {{ class }}::class
+    * );
+    *
+    * If you deserialize an array of Objects:
+    * $response = Http::get('http://127.0.0.1/someFile.json');
+    * $equil = JsonDeserializer::deserialize(
+    * $response->json(),
+    * [{{ class }}::class]
+    * );
+    */
+}
