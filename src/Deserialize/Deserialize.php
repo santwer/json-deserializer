@@ -4,7 +4,7 @@
 namespace antwersv\jsonDeserializer\Deserialize;
 
 
-class Rule
+class Deserialize
 {
     public function __construct(?array $data = null)
     {

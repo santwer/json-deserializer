@@ -59,7 +59,7 @@ class ValidaterRule
             case Carbon::class:
                 return 'date';
         }
-        if($this->type instanceof Rule) {
+        if($this->type instanceof Deserialize) {
             //i dont know
         }
     }
