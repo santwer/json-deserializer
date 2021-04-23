@@ -4,8 +4,16 @@
 namespace antwersv\jsonDeserializer\Deserialize;
 
 
+use Illuminate\Support\Facades\App;
+use function Couchbase\defaultDecoder;
+
 class Deserialize
 {
+    /**
+     * @var Illuminate\Database\Eloquent\Model $model
+     */
+    protected $model = null;
+
     public function __construct(?array $data = null)
     {
         if($data !== null) {
@@ -27,7 +35,20 @@ class Deserialize
 
     }
 
+    public function save()
+    {
+        if($this->model === null || !class_exists($this->model)) {
+            return false;
+        }
+        $modelKey = (new $this->model)->getKeyName();
 
+
+        if(isset($this->{$modelKey}) && $this->{$modelKey} !== null) {
+            $name = $this->{$modelKey};
+            $entry = call_user_func_array([$name, '']);
+        }
+        dd('test', $modelKey, $this->model);
+    }
 
     /**
      * @var string STRICT (all required|not empty) | NORMAL (null|orType) | LOSE

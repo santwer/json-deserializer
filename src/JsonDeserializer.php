@@ -6,6 +6,7 @@ namespace antwersv\jsonDeserializer;
 
 use antwersv\jsonDeserializer\Deserialize\ValidaterRule;
 use Illuminate\Support\Facades\Validator;
+use function Couchbase\defaultDecoder;
 
 class JsonDeserializer
 {

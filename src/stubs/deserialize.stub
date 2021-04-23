@@ -6,6 +6,9 @@ use antwersv\jsonDeserializer\Deserialize\Deserialize;
 
 class {{ class }} extends Deserialize
 {
+   //add Model for save
+   //private $model = Model::class;
+
    //define all rules as public attributes
    //public string $example;
 
