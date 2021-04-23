@@ -4,6 +4,7 @@
 namespace antwersv\jsonDeserializer;
 
 
+use antwersv\jsonDeserializer\Deserialize\Collection;
 use antwersv\jsonDeserializer\Deserialize\ValidaterRule;
 use Illuminate\Support\Facades\Validator;
 use function Couchbase\defaultDecoder;
@@ -17,25 +18,92 @@ class JsonDeserializer
     protected $isArray = false;
 
     /**
-     * @param array $json
-     * @param string|array $class
+     * @param  array  $json
+     * @param  string|array  $class
      * @return \Illuminate\Support\Collection
      */
-    public static function deserialize(array $json, string|array $class): \Illuminate\Support\Collection
+    public static function deserialize(array $json, string|array $class): Collection
     {
         $deserialier = new JsonDeserializer($json, $class);
 
         $data = $deserialier->getCollection();
         if ($data === null) {
-            return collect();
+            return new Collection();
         }
         return $data;
     }
 
+    public static function save(Collection $collection)
+    {
+        $modelEntries = [];
+        foreach ($collection as $item) {
+            $modelEntries[$item->getModel()][] = $item->toArray();
+        }
+        foreach ($modelEntries as $model => $entries) {
+            self::saveToModel($entries, $model);
+        }
+    }
+
+    private static function saveToModel(array $entries, string $model)
+    {
+        if (! class_exists($model)) {
+            return null;
+        }
+        $modelKey = (new $model)->getKeyName();
+        $keys = array_map(fn($entry) => isset($entry[$modelKey]) ? $entry[$modelKey] : null, $entries);
+        $dbEntries = self::checkModelEntries($model, $modelKey, $keys);
+
+        foreach ($dbEntries as $entry) {
+            $filtered = last(array_filter($entries, function ($item) use ($entry, $modelKey) {
+                return isset($item[$modelKey]) && $item[$modelKey] === $entry->{$modelKey};
+            }));
+            foreach ($filtered as $modelAttr => $values) {
+                $entry->{$modelAttr} = $values;
+            }
+            $entry->save();
+        }
+
+        $insertEntries = array_filter($entries, function ($item) use ($dbEntries, $modelKey) {
+            if (! isset($item[$modelKey])) {
+                return true;
+            }
+            return $dbEntries->where($modelKey, $item[$modelKey])->count() === 0;
+        });
+        return call_user_func_array([$model, 'insert'], [$insertEntries]);
+
+    }
+
+    /**
+     * @param  string  $model
+     * @param  string  $key
+     * @param  array  $ids
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private static function checkModelEntries(string $model, string $key, array $ids)
+    {
+        if (! class_exists($model)) {
+            return null;
+        }
+        $ids = array_filter($ids, fn($id) => $id !== null);
+        if (empty($ids)) {
+            return new \Illuminate\Database\Eloquent\Collection();
+        }
+        $entries = call_user_func_array([$model, 'whereIn'], [$key, $ids]);
+        return $entries->get();
+    }
+
+    public static function getDeserializeClassData(string $class): ?array
+    {
+        if (! class_exists($class)) {
+            return null;
+        }
+        return get_class_vars($class);
+    }
+
     /**
      * JsonDeserializer constructor.
-     * @param array $json
-     * @param string|array $class
+     * @param  array  $json
+     * @param  string|array  $class
      */
     public function __construct(array $json, string|array $class)
     {
@@ -50,9 +118,13 @@ class JsonDeserializer
 
     }
 
+    /**
+     * @return Collection
+     * @throws \Illuminate\Validation\ValidationException
+     */
     private function getCollection()
     {
-        $data = collect($this->validateData());
+        $data = new Collection($this->validateData());
         $data = $data->map(function ($item) {
             return $this->getObjectFromClass($item);
         });
@@ -83,7 +155,7 @@ class JsonDeserializer
      */
     private function getRules()
     {
-        return $this->rules->map(fn($rule) => (string)$rule)->toArray();
+        return $this->rules->map(fn($rule) => (string) $rule)->toArray();
     }
 
     /**
@@ -108,7 +180,7 @@ class JsonDeserializer
     private function getRuleAttribute($attitube): string
     {
         if ($this->isArray) {
-            $attitube = '*.' . $attitube;
+            $attitube = '*.'.$attitube;
         }
         return $attitube;
     }

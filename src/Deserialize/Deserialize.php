@@ -4,6 +4,8 @@
 namespace antwersv\jsonDeserializer\Deserialize;
 
 
+use antwersv\jsonDeserializer\JsonDeserializer;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\App;
 use function Couchbase\defaultDecoder;
 
@@ -21,8 +23,12 @@ class Deserialize
         }
     }
 
-    private function setAttributes(array $data) {
+    public function getModel()
+    {
+        return $this->model;
+    }
 
+    private function setAttributes(array $data) {
             foreach($data as $attribute => $value) {
                 $rp = new \ReflectionProperty($this, $attribute);
                 $typeName = $rp->getType()?->getName();
@@ -32,7 +38,32 @@ class Deserialize
                     $this->{$attribute} = $value;
                 }
             }
+    }
 
+    public function toArray()
+    {
+        $attributes = JsonDeserializer::getDeserializeClassData(get_class ($this));
+        if($attributes === null) {
+            return [];
+        }
+        return $this->getAttributes($attributes)->toArray();
+    }
+
+    /**
+     * @param  array  $attributes
+     * @return \Illuminate\Support\Collection
+     */
+    private function getAttributes(array $attributes) :\Illuminate\Support\Collection
+    {
+       $collect = collect();
+       foreach($attributes as $key => $attribute) {
+           $value = null;
+           if(isset($this->{$key})) {
+               $value = $this->{$key};
+           }
+           $collect->put($key, $value);
+       }
+       return $collect;
     }
 
     public function save()
@@ -41,13 +72,22 @@ class Deserialize
             return false;
         }
         $modelKey = (new $this->model)->getKeyName();
-
-
+        /**
+         * @var Model
+         */
+        $entry = null;
         if(isset($this->{$modelKey}) && $this->{$modelKey} !== null) {
-            $name = $this->{$modelKey};
-            $entry = call_user_func_array([$name, '']);
+            $value = $this->{$modelKey};
+            $entry = call_user_func_array([$this->model, 'find'], [$value]);
         }
-        dd('test', $modelKey, $this->model);
+        if($entry === null) {
+            $entry = new $this->model;
+        }
+        foreach($this->toArray() as $key => $value)
+        {
+            $entry->{$key} = $value;
+        }
+        return $entry->save();
     }
 
     /**
